@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carga Inicial — Proyección v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0e0e10;--surface:#16161a;--surface2:#1e1e24;--border:#2a2a35;--accent:#c8f000;--accent2:#ff6b35;--text:#e8e8f0;--muted:#6b6b80;--success:#4ade80;--danger:#f87171;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,240,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,240,0,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:32px 20px 80px;}
+  header{margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(20px,5vw,32px);font-weight:800;letter-spacing:-1px;}
+  h1 span{color:var(--accent);}
+  header p{margin-top:4px;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;}
+  .card h2{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:6px;}
+  .card p{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+  .stat{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;}
+  .stat .num{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);}
+  .stat .lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+  .preview-table{overflow-x:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:16px;max-height:240px;overflow-y:auto;}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  thead tr{background:var(--surface2);border-bottom:1px solid var(--border);}
+  thead th{text-align:left;padding:8px 12px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:last-child{border-bottom:none;}
+  tbody td{padding:8px 12px;white-space:nowrap;}
+  .chip{display:inline-block;font-size:9px;letter-spacing:0.5px;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+  .chip-fijo{background:rgba(200,240,0,0.12);color:var(--accent);}
+  .chip-cuota{background:rgba(255,107,53,0.12);color:var(--accent2);}
+  .chip-consumo{background:rgba(74,222,128,0.12);color:var(--success);}
+  .btn-google{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1a1a1a;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:12px 24px;border-radius:6px;border:none;cursor:pointer;transition:all 0.2s;}
+  .btn-google:hover{background:#f0f0f0;}
+  .btn-google svg{width:18px;height:18px;}
+  .btn-load{width:100%;background:var(--accent);border:none;color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px;border-radius:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;}
+  .btn-load:hover{background:#d4ff00;}
+  .btn-load:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;}
+  .progress-wrap{display:none;margin-top:18px;}
+  .progress-wrap.show{display:block;}
+  .progress-bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:10px;}
+  .progress-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width 0.3s ease;width:0%;}
+  .progress-log{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;max-height:200px;overflow-y:auto;font-size:11px;color:var(--muted);line-height:1.8;}
+  .log-ok{color:var(--success);}
+  .log-err{color:var(--danger);}
+  .done-banner{display:none;background:rgba(74,222,128,0.08);border:1px solid var(--success);border-radius:8px;padding:20px;text-align:center;margin-top:16px;}
+  .done-banner.show{display:block;}
+  .done-banner h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--success);margin-bottom:6px;}
+  .done-banner p{font-size:12px;color:var(--muted);margin-bottom:12px;}
+  .btn-goto{display:inline-block;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;padding:10px 20px;border-radius:6px;text-decoration:none;}
+  .sync-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:8px;}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+  .sync-dot.ok{background:var(--success);box-shadow:0 0 6px var(--success);}
+  .sync-dot.loading{background:var(--accent);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>CARGA <span>INICIAL</span></h1>
+    <p>Proyección v2 → Google Sheets</p>
+    <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Sin conectar</span></div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat"><div class="num">34</div><div class="lbl">Gastos tarjeta</div></div>
+    <div class="stat"><div class="num">6</div><div class="lbl">Gastos fijos</div></div>
+    <div class="stat"><div class="num">4</div><div class="lbl">Ingresos</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Gastos de tarjeta (BBVA / BNA / BH)</h2>
+    <p>34 registros extraídos de Proyección_v2.</p>
+    <div class="preview-table">
+      <table>
+        <thead><tr><th>Tarjeta</th><th>Detalle</th><th>Tipo</th><th>Categoría</th><th>Monto</th><th>Cuotas</th><th>Total</th></tr></thead>
+        <tbody id="prev-tarjeta"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Gastos fijos / efectivo</h2>
+    <p>6 registros: Terreno, Auto, Vianda, Tributum, Internet+Agua, Luz.</p>
+    <div class="preview-table">
+      <table>
+        <thead><tr><th>Medio</th><th>Concepto</th><th>Tipo</th><th>Categoría</th><th>Monto</th><th>Mes Ini</th><th>Mes Fin</th></tr></thead>
+        <tbody id="prev-fijos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ingresos mensuales</h2>
+    <p>4 fuentes: Sueldo, Extra APS, Extra 1, Extra 2.</p>
+    <div class="preview-table">
+      <table>
+        <thead><tr><th>Concepto</th><th>Monto</th><th>Día cobro</th><th>Meses</th></tr></thead>
+        <tbody id="prev-ingresos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ejecutar carga</h2>
+    <p>Autorizá con Google para escribir en la planilla <strong style="color:var(--text);">Gastotrack Sheets</strong>.<br>Este proceso se ejecuta una sola vez y limpia las hojas antes de escribir.</p>
+    <div style="text-align:center;margin-bottom:8px;" id="auth-section">
+      <button class="btn-google" onclick="signIn()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Iniciar sesión con Google
+      </button>
+    </div>
+    <button class="btn-load" id="btn-load" onclick="ejecutarCarga()" disabled>↗ CARGAR DATOS EN SHEETS</button>
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      <div class="progress-log" id="progress-log"></div>
+    </div>
+    <div class="done-banner" id="done-banner">
+      <h3>✓ Carga completada</h3>
+      <p>44 registros escritos en Google Sheets.</p>
+      <a class="btn-goto" href="index.html">→ Ir a GastoTrack</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID  = '1MzXRF58SycUE8FYuJN7kVHuk9iVPeun14Ua9dencORc';
+const CLIENT_ID = '226353978852-3177crqscraoluoguftkll4v6d7p8ae7.apps.googleusercontent.com';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
+let tokenClient, accessToken = null;
+
+const GT = [
+  [1,'Mar-2025','BBVA','Seguro auto','Gasto Fijo','Auto / Transporte',42000,10,420000,'Mar','',''],
+  [2,'Mar-2025','BBVA','Combustible','Consumo','Auto / Transporte',35000,1,35000,'Mar','',''],
+  [3,'Mar-2025','BBVA','Almohadón','Cuota','Auto / Transporte',12334,1,12334,'Mar','',''],
+  [4,'Mar-2025','BBVA','Almohadón (2)','Cuota','Auto / Transporte',8600,4,34400,'Mar','',''],
+  [5,'Mar-2025','BBVA','Hidrolavadora','Cuota','Hogar / Electrodomésticos',8700,5,43500,'Mar','',''],
+  [6,'Mar-2025','BBVA','Balanceo','Consumo','Auto / Transporte',27300,1,27300,'Mar','',''],
+  [7,'Mar-2025','BBVA','Cobertor auto','Cuota','Auto / Transporte',4833,4,19332,'Mar','',''],
+  [8,'Mar-2025','BBVA','Orso','Cuota','Ropa / Accesorios',53375,2,106750,'Mar','',''],
+  [9,'Mar-2025','BBVA','Curso Maroni','Cuota','Educación / Cursos',15000,4,60000,'Mar','',''],
+  [10,'Mar-2025','BBVA','Auricular JBL','Cuota','Hogar / Electrodomésticos',17300,6,103800,'Mar','',''],
+  [11,'Mar-2025','BBVA','Service auto','Consumo','Auto / Transporte',30000,3,90000,'Mar','',''],
+  [12,'Mar-2025','BBVA','Cosas lavar auto','Consumo','Auto / Transporte',5600,1,5600,'Mar','',''],
+  [13,'Mar-2025','BBVA','Cartera Prune','Cuota','Ropa / Accesorios',23000,3,69000,'Mar','',''],
+  [14,'Mar-2025','BBVA','Compresor','Cuota','Auto / Transporte',13200,3,39600,'Mar','',''],
+  [15,'Mar-2025','BBVA','Chango (auto)','Consumo','Auto / Transporte',17300,1,17300,'Mar','',''],
+  [16,'Mar-2025','BBVA','Chango (alim.)','Consumo','Alimentación',10000,1,10000,'Mar','',''],
+  [17,'Mar-2025','BBVA','IA Google','Gasto Fijo','Servicios / Suscripciones',4000,1,4000,'Mar','',''],
+  [18,'Abr-2025','BBVA','Carrefour (ABR)','Consumo','Alimentación',26000,1,26000,'Abr','',''],
+  [19,'Mar-2025','BBVA','Chango más','Consumo','Alimentación',36500,1,36500,'Mar','',''],
+  [20,'Mar-2025','BBVA','Irrigador','Cuota','Salud / Farmacia',12000,9,108000,'Mar','',''],
+  [21,'Mar-2025','BBVA','Cepillo Oral B','Cuota','Salud / Farmacia',20000,3,60000,'Mar','',''],
+  [22,'Mar-2025','BBVA','Quita sarro','Cuota','Salud / Farmacia',17000,6,102000,'Mar','',''],
+  [23,'Mar-2025','BBVA','Perfume Carolina','Cuota','Salud / Farmacia',8100,9,72900,'Mar','',''],
+  [24,'Mar-2025','BBVA','ORSO (2)','Cuota','Ropa / Accesorios',12800,3,38400,'Mar','',''],
+  [25,'Mar-2025','BBVA','Farmacia','Cuota','Salud / Farmacia',12000,3,36000,'Mar','',''],
+  [26,'Mar-2025','BBVA','SHEIN','Consumo','Ropa / Accesorios',27000,1,27000,'Mar','',''],
+  [27,'Mar-2025','BBVA','YouTube','Gasto Fijo','Servicios / Suscripciones',7000,7,49000,'Mar','',''],
+  [28,'Mar-2025','BNA','Carrefour','Consumo','Alimentación',11000,1,11000,'Mar','',''],
+  [29,'Mar-2025','BNA','Mate Caro','Cuota','Hogar / Electrodomésticos',10000,6,60000,'Mar','',''],
+  [30,'Mar-2025','BNA','Bici mía','Cuota','Auto / Transporte',21000,13,273000,'Mar','',''],
+  [31,'Mar-2025','BNA','Perfume Hugo Boss','Cuota','Ropa / Accesorios',16500,3,49500,'Mar','',''],
+  [32,'Mar-2025','BH','Farmacia','Consumo','Salud / Farmacia',7500,2,15000,'Mar','',''],
+  [33,'Mar-2025','BH','Cáceres','Consumo','Alimentación',28500,1,28500,'Mar','',''],
+  [34,'Mar-2025','BH','APA','Consumo','Alimentación',28000,1,28000,'Mar','',''],
+];
+const GF = [
+  [1,'Mar-2025','Efectivo','Terreno','Cuota','Inversión / Finanzas',120000,'Mar','Jun',20,''],
+  [2,'May-2025','Efectivo','Auto x 500.000','Cuota','Auto / Transporte',293000,'May','Jun','',''],
+  [3,'Mar-2025','Efectivo','Vianda','Gasto Fijo','Alimentación',115000,'Mar','Ago','',''],
+  [4,'Mar-2025','Débito','Tributum','Gasto Fijo','Servicios / Suscripciones',7200,'Mar','Jun','',''],
+  [5,'Mar-2025','Efectivo','Internet + Agua','Gasto Fijo','Servicios / Suscripciones',13000,'Mar','Jun','',''],
+  [6,'Mar-2025','Efectivo','Luz','Gasto Fijo','Servicios / Suscripciones',13000,'Mar','Jun','',''],
+];
+const IN = [
+  [1,'Mar-2025','Sueldo',1470000,5,'Mar-Ago',''],
+  [2,'Mar-2025','Extra APS',300000,10,'Mar-Ago',''],
+  [3,'Mar-2025','Extra 1',300000,20,'Mar-Ago',''],
+  [4,'Mar-2025','Extra 2',78000,5,'Mar-May',''],
+];
+const HEADERS = {
+  gastos_tarjeta:['ID','Fecha','Tarjeta','Detalle','Tipo','Categoría','Monto','Cuotas','Total','Mes Inicio','Vencimiento','Notas'],
+  gastos_fijos:  ['ID','Fecha','Medio','Concepto','Tipo','Categoría','Monto','Mes Inicio','Mes Fin','Vencimiento','Notas'],
+  ingresos:      ['ID','Fecha','Concepto','Monto','Día Cobro','Mes','Notas']
+};
+
+function fmt(n){return Number(n).toLocaleString('es-AR');}
+
+// Previews
+document.getElementById('prev-tarjeta').innerHTML = GT.map(r=>{
+  const cc=r[4]==='Gasto Fijo'?'chip-fijo':r[4]==='Cuota'?'chip-cuota':'chip-consumo';
+  return `<tr><td><span style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);font-size:9px;padding:2px 6px;border-radius:3px;">${r[2]}</span></td><td>${r[3]}</td><td><span class="chip ${cc}">${r[4]}</span></td><td style="color:var(--muted);">${r[5]}</td><td>$${fmt(r[6])}</td><td style="color:var(--muted);">${r[7]}x</td><td style="color:var(--accent);">$${fmt(r[8])}</td></tr>`;
+}).join('');
+document.getElementById('prev-fijos').innerHTML = GF.map(r=>{
+  const cc=r[4]==='Gasto Fijo'?'chip-fijo':'chip-cuota';
+  return `<tr><td style="color:var(--muted);">${r[2]}</td><td>${r[3]}</td><td><span class="chip ${cc}">${r[4]}</span></td><td style="color:var(--muted);">${r[5]}</td><td style="color:var(--accent);">$${fmt(r[6])}</td><td>${r[7]}</td><td>${r[8]}</td></tr>`;
+}).join('');
+document.getElementById('prev-ingresos').innerHTML = IN.map(r=>`<tr><td>${r[2]}</td><td style="color:var(--success);">$${fmt(r[3])}</td><td style="color:var(--muted);">Día ${r[4]}</td><td style="color:var(--muted);">${r[5]}</td></tr>`).join('');
+
+function initGIS() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID, scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { log('Error: '+resp.error,'err'); return; }
+      accessToken = resp.access_token;
+      setSyncStatus('ok','Conectado ✓');
+      document.getElementById('auth-section').style.display='none';
+      document.getElementById('btn-load').disabled=false;
+    }
+  });
+}
+function signIn(){ setSyncStatus('loading','Conectando...'); tokenClient.requestAccessToken({prompt:'select_account'}); }
+
+async function ejecutarCarga() {
+  document.getElementById('btn-load').disabled=true;
+  document.getElementById('progress-wrap').classList.add('show');
+  try {
+    log('Verificando hojas...');
+    const r = await api(`spreadsheets/${SHEET_ID}?fields=sheets.properties.title`);
+    const existing = r.sheets.map(s=>s.properties.title);
+    const toCreate = Object.keys(HEADERS).filter(h=>!existing.includes(h));
+    if (toCreate.length) {
+      await api(`spreadsheets/${SHEET_ID}:batchUpdate`,'POST',{requests:toCreate.map(n=>({addSheet:{properties:{title:n}}}))});
+    }
+    log('Hojas OK ✓','ok'); setP(10);
+
+    for (const [sheet,headers] of Object.entries(HEADERS)) {
+      await api(`spreadsheets/${SHEET_ID}/values/${enc(sheet)}:clear`,'POST',{});
+      await append(sheet,[headers]);
+    }
+    log('Headers escritos ✓','ok'); setP(20);
+
+    await append('gastos_tarjeta', GT); log(`✓ ${GT.length} gastos tarjeta`,'ok'); setP(55);
+    await append('gastos_fijos', GF);   log(`✓ ${GF.length} gastos fijos`,'ok'); setP(75);
+    await append('ingresos', IN);       log(`✓ ${IN.length} ingresos`,'ok'); setP(100);
+    log('─────────────────────────────');
+    log(`TOTAL: ${GT.length+GF.length+IN.length} registros escritos ✓`,'ok');
+    document.getElementById('done-banner').classList.add('show');
+  } catch(e) { log('ERROR: '+e.message,'err'); document.getElementById('btn-load').disabled=false; }
+}
+
+function enc(s){return encodeURIComponent(s);}
+async function append(sheet, rows){
+  return api(`spreadsheets/${SHEET_ID}/values/${enc(sheet)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,'POST',{values:rows});
+}
+async function api(endpoint,method='GET',body=null){
+  const r=await fetch(`https://sheets.googleapis.com/v4/${endpoint}`,{method,headers:{'Authorization':`Bearer ${accessToken}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||r.statusText);}
+  return r.json();
+}
+function setP(pct){document.getElementById('progress-fill').style.width=pct+'%';}
+function log(msg,type=''){const el=document.getElementById('progress-log');const d=document.createElement('div');d.className=type==='ok'?'log-ok':type==='err'?'log-err':'';d.textContent=msg;el.appendChild(d);el.scrollTop=el.scrollHeight;}
+function setSyncStatus(s,l){document.getElementById('sync-dot').className='sync-dot '+(s||'');document.getElementById('sync-label').textContent=l;}
+
+window.onload=()=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=initGIS;document.head.appendChild(s);};
+</script>
+</body>
+</html>
