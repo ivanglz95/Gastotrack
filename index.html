@@ -391,7 +391,29 @@
         <div class="kpi-card"><div class="kpi-label">Comprometido</div><div class="kpi-value" id="dk-comprometido">—</div><div class="kpi-sub">cuotas pendientes</div></div>
       </div>
 
-      <!-- Fila 1: Ingresos vs Gastos por mes (barras agrupadas) -->
+      <!-- Fila 1: 4 barras individuales por mes -->
+      <div class="dash-row">
+        <div class="chart-box">
+          <h3>Ingresos por mes</h3>
+          <div class="chart-wrap"><canvas id="chart-bar-ing"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>Gastos totales por mes (tarjeta + fijos)</h3>
+          <div class="chart-wrap"><canvas id="chart-bar-total"></canvas></div>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="chart-box">
+          <h3>Gastos de tarjeta por mes</h3>
+          <div class="chart-wrap"><canvas id="chart-bar-tarjeta"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>Gastos fijos por mes</h3>
+          <div class="chart-wrap"><canvas id="chart-bar-fijos"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Fila 3: Ingresos vs Gastos por mes (barras agrupadas) -->
       <div class="dash-row full">
         <div class="chart-box">
           <h3>Ingresos vs Gastos — evolución mensual</h3>
@@ -915,7 +937,88 @@ function renderDashboard() {
     y:{ticks:{color:'#6b6b80',font:{family:'DM Mono',size:10},callback:v=>'$'+Number(v/1000).toFixed(0)+'k'},grid:{color:'rgba(42,42,53,0.5)'}}
   };
 
-  // ── GRÁFICO 1: Ingresos vs Gastos barras agrupadas ──
+  const dlOpts = (color) => ({
+    anchor:'end', align:'top', color, font:{family:'DM Mono',size:9, weight:'500'},
+    formatter: v => v>0 ? '$'+Number(v/1000).toFixed(0)+'k' : ''
+  });
+  const scaleY = (color='#6b6b80') => ({
+    ticks:{color,font:{family:'DM Mono',size:10},callback:v=>'$'+Number(v/1000).toFixed(0)+'k'},
+    grid:{color:'rgba(42,42,53,0.5)'}
+  });
+
+  // ── BARRA: Ingresos por mes ──
+  mkChart('chart-bar-ing',{
+    type:'bar',
+    data:{
+      labels:mesesActivos,
+      datasets:[{
+        label:'Ingresos', data:mesesActivos.map(m=>ingresosMes[m]),
+        backgroundColor:'rgba(74,222,128,0.75)', borderColor:'#4ade80', borderWidth:1, borderRadius:4,
+        datalabels:dlOpts('#4ade80')
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Number(c.raw).toLocaleString('es-AR')}},datalabels:{display:true}},
+      scales:{x:scalesBase.x, y:scaleY()}
+    },
+    plugins:[ChartDataLabels]
+  });
+
+  // ── BARRA: Gastos totales por mes ──
+  mkChart('chart-bar-total',{
+    type:'bar',
+    data:{
+      labels:mesesActivos,
+      datasets:[{
+        label:'Gasto total', data:mesesActivos.map(m=>gastosMes[m]),
+        backgroundColor:'rgba(248,113,113,0.75)', borderColor:'#f87171', borderWidth:1, borderRadius:4,
+        datalabels:dlOpts('#f87171')
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Number(c.raw).toLocaleString('es-AR')}},datalabels:{display:true}},
+      scales:{x:scalesBase.x, y:scaleY()}
+    },
+    plugins:[ChartDataLabels]
+  });
+
+  // ── BARRA: Gastos tarjeta por mes ──
+  mkChart('chart-bar-tarjeta',{
+    type:'bar',
+    data:{
+      labels:mesesActivos,
+      datasets:[{
+        label:'Tarjetas', data:mesesActivos.map(m=>tarjetaMes[m]),
+        backgroundColor:'rgba(200,240,0,0.75)', borderColor:'#c8f000', borderWidth:1, borderRadius:4,
+        datalabels:dlOpts('#c8f000')
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Number(c.raw).toLocaleString('es-AR')}},datalabels:{display:true}},
+      scales:{x:scalesBase.x, y:scaleY()}
+    },
+    plugins:[ChartDataLabels]
+  });
+
+  // ── BARRA: Gastos fijos por mes ──
+  mkChart('chart-bar-fijos',{
+    type:'bar',
+    data:{
+      labels:mesesActivos,
+      datasets:[{
+        label:'Fijos / Efectivo', data:mesesActivos.map(m=>fijosMes[m]),
+        backgroundColor:'rgba(96,165,250,0.75)', borderColor:'#60a5fa', borderWidth:1, borderRadius:4,
+        datalabels:dlOpts('#60a5fa')
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Number(c.raw).toLocaleString('es-AR')}},datalabels:{display:true}},
+      scales:{x:scalesBase.x, y:scaleY()}
+    },
+    plugins:[ChartDataLabels]
+  });
+
+  // ── GRÁFICO: Ingresos vs Gastos barras agrupadas ──
   mkChart('chart-ing-vs-gasto',{
     type:'bar',
     data:{
